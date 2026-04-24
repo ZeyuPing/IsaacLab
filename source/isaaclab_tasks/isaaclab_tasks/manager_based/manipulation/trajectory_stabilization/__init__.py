@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Manipulation environments for fixed-arm robots."""
+"""Trajectory-conditioned residual stabilization environments."""
 
-from .reach import *  # noqa
-from .trajectory_stabilization import *  # noqa
+from .config import *  # noqa: F401, F403

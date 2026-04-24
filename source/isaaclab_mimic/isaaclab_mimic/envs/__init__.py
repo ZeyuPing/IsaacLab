@@ -159,3 +159,16 @@ gym.register(
     },
     disable_env_checker=True,
 )
+
+##
+# Bimanual trajectory stabilization
+##
+
+gym.register(
+    id="Isaac-Traj-Stabilize-Cube-HX5-Mimic-v0",
+    entry_point=f"{__name__}.trajectory_stabilization_mimic_env:TrajectoryStabilizationMimicEnv",
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.trajectory_stabilization_mimic_env_cfg:HX5TrajectoryStabilizationMimicEnvCfg",
+    },
+    disable_env_checker=True,
+)
