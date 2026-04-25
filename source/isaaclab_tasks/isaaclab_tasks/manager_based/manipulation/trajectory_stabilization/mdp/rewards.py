@@ -11,7 +11,7 @@ import torch
 def _reference_object_state(env):
     ref = getattr(env, "reference_object_state_cache", None)
     if ref is None:
-        ref = torch.zeros((env.num_envs, 13), dtype=torch.float, device=env.device)
+        ref = env.scene["object"].data.root_state_w[:, :13]
     return ref
 
 
@@ -44,7 +44,12 @@ def residual_action_l2(env) -> torch.Tensor:
     if cache is None:
         return torch.zeros(env.num_envs, dtype=torch.float, device=env.device)
     components = torch.cat(
-        [cache["left_wrist_delta"], cache["right_wrist_delta"], cache["left_joint_residual"], cache["right_joint_residual"]],
+        [
+            cache["left_wrist_delta"],
+            cache["right_wrist_delta"],
+            cache["left_joint_residual"],
+            cache["right_joint_residual"],
+        ],
         dim=-1,
     )
     return torch.sum(components**2, dim=-1)

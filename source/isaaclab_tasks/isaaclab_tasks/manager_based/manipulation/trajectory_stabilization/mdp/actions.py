@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import MISSING
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import torch
 
@@ -16,20 +16,6 @@ from isaaclab.utils import configclass
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
-
-
-@configclass
-class TrajectoryResidualActionCfg(ActionTermCfg):
-    """Configuration for trajectory-conditioned residual actions."""
-
-    class_type: type[ActionTerm] = MISSING
-    left_hand_asset_name: str = MISSING
-    right_hand_asset_name: str = MISSING
-    left_joint_names: list[str] = MISSING
-    right_joint_names: list[str] = MISSING
-    wrist_pos_scale: float = 0.02
-    wrist_rot_scale: float = 0.10
-    joint_scale: float = 0.10
 
 
 class TrajectoryResidualAction(ActionTerm):
@@ -47,9 +33,6 @@ class TrajectoryResidualAction(ActionTerm):
     _asset: Articulation
 
     def __init__(self, cfg: TrajectoryResidualActionCfg, env: ManagerBasedEnv):
-        # Delay class_type self-reference until runtime import completes.
-        if cfg.class_type is MISSING:
-            cfg.class_type = TrajectoryResidualAction
         super().__init__(cfg, env)
 
         self._left_hand: Articulation = env.scene[cfg.left_hand_asset_name]
@@ -83,16 +66,24 @@ class TrajectoryResidualAction(ActionTerm):
 
     def process_actions(self, actions: torch.Tensor):
         self._raw_actions[:] = actions
-        self._processed_actions[:] = actions
 
         cursor = 0
-        self._left_wrist_delta[:] = actions[:, cursor : cursor + 6]
+        left_wrist_action = actions[:, cursor : cursor + 6]
+        self._left_wrist_delta[:, :3] = left_wrist_action[:, :3] * self.cfg.wrist_pos_scale
+        self._left_wrist_delta[:, 3:6] = left_wrist_action[:, 3:6] * self.cfg.wrist_rot_scale
         cursor += 6
-        self._right_wrist_delta[:] = actions[:, cursor : cursor + 6]
+        right_wrist_action = actions[:, cursor : cursor + 6]
+        self._right_wrist_delta[:, :3] = right_wrist_action[:, :3] * self.cfg.wrist_pos_scale
+        self._right_wrist_delta[:, 3:6] = right_wrist_action[:, 3:6] * self.cfg.wrist_rot_scale
         cursor += 6
         self._left_joint_residual[:] = actions[:, cursor : cursor + self._left_joint_dim] * self.cfg.joint_scale
         cursor += self._left_joint_dim
         self._right_joint_residual[:] = actions[:, cursor : cursor + self._right_joint_dim] * self.cfg.joint_scale
+
+        self._processed_actions[:] = torch.cat(
+            [self._left_wrist_delta, self._right_wrist_delta, self._left_joint_residual, self._right_joint_residual],
+            dim=-1,
+        )
 
         # Keep the controller boundary explicit for later runtime work.
         self._env.trajectory_residual_action_cache = {
@@ -104,12 +95,16 @@ class TrajectoryResidualAction(ActionTerm):
 
     def apply_actions(self):
         nominal = getattr(self._env, "nominal_replay_cache", {})
-        left_nominal = nominal.get("left_joint_targets", self._left_hand.data.default_joint_pos[:, self._left_joint_ids])
+        left_nominal = nominal.get(
+            "left_joint_targets", self._left_hand.data.default_joint_pos[:, self._left_joint_ids]
+        )
         right_nominal = nominal.get(
             "right_joint_targets", self._right_hand.data.default_joint_pos[:, self._right_joint_ids]
         )
 
-        self._left_hand.set_joint_position_target(left_nominal + self._left_joint_residual, joint_ids=self._left_joint_ids)
+        self._left_hand.set_joint_position_target(
+            left_nominal + self._left_joint_residual, joint_ids=self._left_joint_ids
+        )
         self._right_hand.set_joint_position_target(
             right_nominal + self._right_joint_residual, joint_ids=self._right_joint_ids
         )
@@ -121,4 +116,15 @@ class TrajectoryResidualAction(ActionTerm):
         }
 
 
-TrajectoryResidualActionCfg.class_type = TrajectoryResidualAction
+@configclass
+class TrajectoryResidualActionCfg(ActionTermCfg):
+    """Configuration for trajectory-conditioned residual actions."""
+
+    class_type: type[ActionTerm] = TrajectoryResidualAction
+    left_hand_asset_name: str = cast(str, MISSING)
+    right_hand_asset_name: str = cast(str, MISSING)
+    left_joint_names: list[str] = cast(list[str], MISSING)
+    right_joint_names: list[str] = cast(list[str], MISSING)
+    wrist_pos_scale: float = 0.02
+    wrist_rot_scale: float = 0.10
+    joint_scale: float = 0.10

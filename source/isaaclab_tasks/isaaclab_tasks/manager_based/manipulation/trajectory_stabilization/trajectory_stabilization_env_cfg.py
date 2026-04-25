@@ -217,11 +217,22 @@ class EventCfg:
             "com_range": {"x": (-0.01, 0.01), "y": (-0.01, 0.01), "z": (-0.01, 0.01)},
         },
     )
+    variable_gravity = EventTerm(
+        func=base_mdp.randomize_physics_scene_gravity,
+        mode="reset",
+        params={
+            "gravity_distribution_params": ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+            "operation": "abs",
+        },
+    )
     push_object = EventTerm(
-        func=mdp.push_object_by_setting_velocity,
+        func=base_mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(2.0, 5.0),
-        params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2), "z": (-0.1, 0.1)}},
+        params={
+            "asset_cfg": SceneEntityCfg("object"),
+            "velocity_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0)},
+        },
     )
 
 
@@ -250,19 +261,31 @@ class TerminationsCfg:
 
 @configclass
 class CurriculumCfg:
-    """Curriculum terms.
+    """Curriculum terms using Isaac Lab's official term-configuration modification pattern."""
 
-    The gravity ramp is intentionally represented by a dedicated helper instead of an inlined
-    lambda so future runtime work has one obvious place to connect the actual physics-scene update.
-    """
-
-    disturbance_scale = CurrTerm(
-        func=mdp.ramp_disturbance_scale,
-        params={"num_steps": 50_000, "start_scale": 0.0, "end_scale": 1.0},
+    disturbance_velocity_range = CurrTerm(
+        func=base_mdp.modify_term_cfg,
+        params={
+            "address": "events.push_object.params.velocity_range",
+            "modify_fn": mdp.linear_interpolate_value,
+            "modify_params": {
+                "initial_value": {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0)},
+                "final_value": {"x": (-0.2, 0.2), "y": (-0.2, 0.2), "z": (-0.1, 0.1)},
+                "num_steps": 50_000,
+            },
+        },
     )
-    gravity_scale = CurrTerm(
-        func=mdp.ramp_gravity_scale,
-        params={"num_steps": 100_000, "start_scale": 0.0, "end_scale": 1.0},
+    gravity_distribution = CurrTerm(
+        func=base_mdp.modify_term_cfg,
+        params={
+            "address": "events.variable_gravity.params.gravity_distribution_params",
+            "modify_fn": mdp.linear_interpolate_value,
+            "modify_params": {
+                "initial_value": ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+                "final_value": ([0.0, 0.0, -9.81], [0.0, 0.0, -9.81]),
+                "num_steps": 100_000,
+            },
+        },
     )
 
 

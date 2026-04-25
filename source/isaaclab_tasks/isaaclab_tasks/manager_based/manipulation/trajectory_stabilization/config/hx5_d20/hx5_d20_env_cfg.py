@@ -9,7 +9,7 @@ from isaaclab.utils import configclass
 
 from isaaclab_assets.robots import HX5_D20_LEFT_CFG, HX5_D20_RIGHT_CFG
 
-from ...trajectory_stabilization_env_cfg import TrajectoryStabilizationEnvCfg
+from ...trajectory_stabilization_env_cfg import ObservationsCfg, TrajectoryStabilizationEnvCfg
 
 
 @configclass
@@ -23,6 +23,8 @@ class HX5CubeTeacherEnvCfg(TrajectoryStabilizationEnvCfg):
         self.scene.right_hand = HX5_D20_RIGHT_CFG.replace(prim_path="{ENV_REGEX_NS}/RightHand")
         self.scene.num_envs = 512
         self.scene.env_spacing = 1.25
+        self.observations.student_policy = None
+        self.observations.teacher_policy = None
 
 
 class HX5CubeTeacherEnvCfg_PLAY(HX5CubeTeacherEnvCfg):
@@ -42,6 +44,7 @@ class HX5CubeDistillEnvCfg(HX5CubeTeacherEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
+        self.observations = ObservationsCfg()
         self.observations.policy = None
         self.observations.critic = None
 
@@ -53,6 +56,8 @@ class HX5CubeStudentEnvCfg(HX5CubeTeacherEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
+        self.observations = ObservationsCfg()
         self.observations.policy = self.observations.student_policy
         self.observations.critic = self.observations.student_policy
+        self.observations.student_policy = None
         self.observations.teacher_policy = None

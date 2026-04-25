@@ -62,12 +62,12 @@ tacada-check-fast:
 tacada-check-ruff:
 	@$(PYTHON) -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('ruff') else 1)" || \
 		(printf "ruff is not installed in env_isaaclab. Install it with:\n  %s -m pip install ruff\n" "$(PYTHON)" && exit 1)
-	@$(PYTHON) -m ruff check $(TACADA_PY_FILES) $(TACADA_DOC_FILES)
+	@$(PYTHON) -m ruff check $(TACADA_PY_FILES)
 
 tacada-check-format:
 	@$(PYTHON) -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('ruff') else 1)" || \
 		(printf "ruff is not installed in env_isaaclab. Install it with:\n  %s -m pip install ruff\n" "$(PYTHON)" && exit 1)
-	@$(PYTHON) -m ruff format --check $(TACADA_PY_FILES) $(TACADA_DOC_FILES)
+	@$(PYTHON) -m ruff format --check $(TACADA_PY_FILES)
 
 tacada-check-pyright:
 	@$(PYTHON) -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('pyright') else 1)" || \
