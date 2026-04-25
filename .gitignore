@@ -45,6 +45,7 @@ docker/artifacts/
 
 # Doc Outputs
 **/docs/_build/*
+tacada_docs/_build/*
 **/generated/*
 
 # Isaac-Sim packman

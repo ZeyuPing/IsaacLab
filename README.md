@@ -48,6 +48,18 @@ detailed tutorials and step-by-step guides. Follow these links to learn more abo
 - [Tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html)
 - [Available environments](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html)
 
+### TacAda Project Docs
+
+For the local TacAda trajectory-stabilization project, use the isolated Sphinx docs in
+[tacada_docs/index.rst](tacada_docs/index.rst). They are designed to build on a Mac
+without a full IsaacLab installation and do not change the upstream Isaac Lab docs flow.
+
+Build them locally with:
+
+```bash
+make tacada-docs
+```
+
 
 ## Isaac Sim Version Dependency
 
